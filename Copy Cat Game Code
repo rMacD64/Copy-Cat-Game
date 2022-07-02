@@ -1,0 +1,367 @@
+/*
+  Date: December 8, 2021
+  Purpose: A program that conducts the Simon Game with
+  		   four buttons and lights, and a sequence of 5 random
+           numbers.
+  Notes: Button clicks are only tested after all lights are
+  completely turned off.
+*/
+
+/*
+  Lab 8 Simon game template
+  Do not modify this template (circuit)
+*/
+
+//preprocessor directives
+//symbolic constants
+
+/*
+  Defining the buttons on and off, the size of arrays or loops
+  time constants, and a win and a loss
+*/
+#define ON HIGH
+#define OFF LOW
+
+#define SIZE_A 5
+#define SIZE_B 3
+#define FLASH 3
+
+#define one_second 1000
+#define COUNT 3000
+
+#define WIN 1
+#define LOSS 0
+
+//Setting up lights and wrong clicks or correct clicks
+int const WIN_light = 8;
+int const LOSS_light = 13;
+
+int const red_light = 12;
+int const yellow_light = 11;
+int const blue_light = 10;
+int const green_light = 9;
+
+int const red_button = 7;
+int const yellow_button = 6;
+int const blue_button = 5;
+int const green_button = 4;
+
+int const wrong = 0;
+int const correct = 1;
+
+/*
+  Making variables: an array of random integers, correct light
+  and button and time_initial
+*/
+int sequence[5];
+
+int correct_light = 0;
+int correct_button = 0;
+
+int testA;
+int testB;
+
+unsigned long time_initial = 0;
+
+//function prototypes
+
+/*
+  Input: None
+  Output: Changes the array: "sequence"
+  Purpose: Creates a random sequence of 5 numbers from 0 to 3
+  (inclusive)
+*/
+void randSequence()
+{
+  for (int i = 0; i < SIZE_A; i++) {
+    sequence[i] = random(4);
+  }
+}
+
+/*
+  Input: size (the current round of the game + 1)
+  Output: Turn lights on, but doesn't return anything
+  Purpose: Turns a light on based on the round and the
+  correct_light defined by the function define_light
+*/
+void lights_on(int size)
+{
+  for (int i = 0; i < size; i++)
+  {
+    define_light(i); //Defining correct_ight
+    
+    digitalWrite(correct_light, ON); //Turning light on for one second
+    delay(one_second);
+    digitalWrite(correct_light, OFF); //Turning light off for half a second
+    delay(one_second / 2);
+    /*
+      This is so that the user can differentiate
+   	  between repeating lights in the sequence
+      (e.g. blue turns on and blue turns on again)
+    */
+  }
+}
+
+/*
+  Input: button and light (from check())
+  Output: Turns light on, but doesn't return anything
+  Purpose: Turns a light on based on how long the user
+  is pressing the button
+*/
+void button_press(int button, int light)
+{
+  while (digitalRead(button) == ON)
+  {
+  	digitalWrite(light, ON);
+  }
+  delay(one_second / 2); //A slight delay so it is obvious the light is on
+  digitalWrite(light, OFF);
+  delay(one_second / 4); //Turning off for a quarter of a second
+}
+
+/*
+  Input: x (a loop value from check())
+  Output: Nothing
+  Purpose: Defines the correct button based on
+  the sequence and the round.
+*/
+void define_button(int x)
+{
+  /*
+  	If the random number from sequence is 0
+    make the correct button red
+  */
+  if (sequence[x] == 0)
+  {
+    correct_button = red_button;
+  }
+  else if (sequence[x] == 1) //If it is 1 make them yellow
+  {
+    correct_button = yellow_button;
+  }
+  else if (sequence[x] == 2) //If it is 2 make them blue
+  {
+    correct_button = blue_button;
+  }
+  else //Otherwise it must be 3 and the light and button must be green
+  {
+    correct_button = green_button;
+  }
+}
+
+/*
+  Input: x (a loop value from lights_on())
+  Output: Nothing
+  Purpose: Defines the correct light based on
+  the sequence and the round
+  Note: This function is very similar to define_light(). However I
+  made two seperate functions rather than combining them in order
+  to save time for the program. This way the program doesn't
+  waste time defining variables that it doesn't need and will have
+  to be changed later.
+*/
+void define_light(int x)
+{
+  /*
+  	Same as earlier, if it is 0, red; 1, yellow; 2, blue;
+    else green
+  */
+  if (sequence[x] == 0)
+  {
+    correct_light = red_light;
+  }
+  else if (sequence[x] == 1)
+  {
+    correct_light = yellow_light;
+  }
+  else if (sequence[x] == 2)
+  {
+    correct_light = blue_light;
+  }
+  else
+  {
+    correct_light = green_light;
+  }
+}
+
+/*
+  Input: x (a button from check())
+  Output: correct (1) or wrong (0)
+  Purpose: If the button clicked is the button that
+  should be clicked, returns correct otherwise returns wrong.
+*/
+int correctbutton_check(int x)
+{  
+  testA = wrong; //Sets testA to wrong
+  
+  /*
+  	If the button is the correct button.
+    Changes testA to correct.
+  */
+  if (x == correct_button)
+  {
+    testA = correct;
+  }
+  
+  return testA; //Returns either 1 or 0
+}
+
+/*
+  Input: i (loop value from loop())
+  Output: correct (1) or wrong (0)
+  Purpose: If a button is clicked it initiates button_press
+  for the corresponding light and initiates correctbutton_check()
+  to see if the button pressed is the right one. If it is, returns
+  correct, else returns wrong.
+*/
+int check(int i)
+{
+  testB = 2; //Random value that is not 0 (wrong) or 1 (correct)
+  define_button(i); //Define correct_button
+  
+  time_initial = millis(); //Sets start time
+  /*
+  	The program keeps checking if any of the buttons
+    has been pressed in a certain time frame of several seconds.
+    If the time limit goes up or one of the button has been pressed
+    it exits the loop.
+    
+    Note: The millis() function is not the most accurate and tends
+    to take much longer than intended, so COUNT is set 3 seconds
+    in order to account for this.
+  */
+  while ((millis() - time_initial < COUNT) && (testB == 2))
+  {
+    if (digitalRead(red_button) == ON) //Checks if red button is on
+    {
+      button_press(red_button, red_light); //Turns red light on with button_press()
+      testB = correctbutton_check(red_button); //Checks if the red button is correct with correctbutton_check()
+    }
+    //Does the same checks and processes for yellow, blue and green
+    if (digitalRead(yellow_button) == ON)
+    {
+      button_press(yellow_button, yellow_light);
+      testB = correctbutton_check(yellow_button);
+    }
+    if (digitalRead(blue_button) == ON)
+    {
+      button_press(blue_button, blue_light);
+      testB = correctbutton_check(blue_button);
+    }
+    if (digitalRead(green_button) == ON)
+    {
+      button_press(green_button, green_light);
+      testB = correctbutton_check(green_button);
+    }
+  }
+  
+  /*
+    If no buttons have been pressed within the
+    time frame it changes testB to wrong
+  */
+  if (testB == 2)
+  {
+    testB = wrong;
+  }
+  
+  return testB; //Returns testB; either correct or wrong
+}
+
+/*
+  Input: light (either WIN_light or LOSS_light from loop())
+  Output: Returns nothing, but turns on WIN_light or LOSS_light
+  Purpose: Flashes the WIN_light or LOSS_light 3 times
+  (or whatever FLASH is defined as).
+*/
+void end_lights(int light)
+{ 
+  for (int i = 0; i < FLASH; i++)
+  {
+    digitalWrite(light, ON); //Turns light on for half a second
+    delay(one_second / 2);
+    digitalWrite(light, OFF); //Turns light off for half a second
+    delay(one_second / 2);
+  }
+}
+
+void setup()
+{
+ //initialization
+ 
+ //Setting buttons to input and lights to output
+ pinMode(WIN_light, OUTPUT);
+ pinMode(LOSS_light, OUTPUT);
+  
+ pinMode(red_light, OUTPUT);
+ pinMode(yellow_light, OUTPUT);
+ pinMode(blue_light, OUTPUT);
+ pinMode(green_light, OUTPUT);
+  
+ pinMode(red_button, INPUT);
+ pinMode(yellow_button, INPUT);
+ pinMode(blue_button, INPUT);
+ pinMode(green_button, INPUT);
+  
+ randomSeed(analogRead(0)); //Setting up the randomSeed generator
+ Serial.begin(9600); //Setting speed of data to be sent
+}
+
+void loop()
+{
+  //main program loop for the Simon game
+  
+  //Turns all lights on for 2 seconds and all lights off for 2 seconds
+  digitalWrite(red_light, ON);
+  digitalWrite(yellow_light, ON);
+  digitalWrite(blue_light, ON);
+  digitalWrite(green_light, ON);
+  delay(2 * one_second);
+  
+  digitalWrite(red_light, OFF);
+  digitalWrite(yellow_light, OFF);
+  digitalWrite(blue_light, OFF);
+  digitalWrite(green_light, OFF);
+  delay(2 * one_second);
+  
+  randSequence(); //Calls randSequence() to make a random sequence
+  int result = WIN; //Sets result to WIN (1)
+  
+  //Goes through 5 rounds (or whatever SIZE_A is) or until the player makes a mistake
+  for (int round = 0; (round < SIZE_A) && (result == WIN); round++)
+  {
+    lights_on((round + 1)); //Initiates round with lights_on
+    
+    /*
+      For every button that must be pressed in the round, it
+      uses check() to tell if the right button has been pressed or not.
+    */
+    for (int index = 0; index < (round + 1); index++)
+    {
+      if (check(index) == wrong) //If the user messes up, changes result to LOSS
+      {
+        result = LOSS;
+      }
+    }
+    delay(2 * one_second);
+    /*
+      Waits two seconds in between each round,
+      leaving ample time for user to get set up.
+    */
+  }
+  
+  /*
+    After going through all rounds, if result still equals WIN.
+    Then it calls the end_lights() with the WIN_light. Otherwise
+    it calls end_lights with LOSS_light.
+  */
+  
+  if (result == WIN)
+  {
+    end_lights(WIN_light);
+  }
+  else
+  {
+    end_lights(LOSS_light);
+  }
+  
+}
